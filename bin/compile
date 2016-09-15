@@ -189,13 +189,27 @@ function precompile_assets {
       fi
   fi
 }
+export_env_dir() {
+  env_dir=$1
+  whitelist_regex=${2:-''}
+  blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH)$'}
+  if [ -d "$env_dir" ]; then
+    for e in $(ls $env_dir); do
+	  echo "$e" | grep -E "$whitelist_regex" | grep -qvE "$blacklist_regex" &&
+      export "$e=$(cat $env_dir/$e)"
+	  :
+    done
+fi
+}
+
+export_env_dir $3
 
 # Look for JRuby version in Gemfile
 VERSION=`grep ^ruby $BUILD_DIR/Gemfile | sed 's/.*version[^0-9]*\([0-9\.]*\).*/\1/'`
 # Try find preferred Ruby mode in the Gemfile
 MODE=`grep ^ruby $BUILD_DIR/Gemfile | cut -c 7-9`
 
-export JRUBY_OPTS="--$MODE -J-Xmx400m -Xcext.enabled=true -J-XX:+UseCompressedOops -J-noverify"
+export JRUBY_OPTS="-J-Xmx400m -J-XX:+UseCompressedOops -J-noverify"
 
 download_and_install_jdk
 download_jruby_and_install_default_gems
